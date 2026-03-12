@@ -125,6 +125,13 @@ export default function StyleTransferPage() {
         saveHistory(updated);
     };
 
+    const handleDownloadHistory = (imageUrl) => {
+        const link = document.createElement("a");
+        link.href = imageUrl;
+        link.download = `style-transfer-${Date.now()}.png`;
+        link.click();
+    };
+
     const handleClearHistory = () => {
         if (window.confirm("Clear all style transfer history?")) {
             saveHistory([]);
@@ -265,13 +272,22 @@ export default function StyleTransferPage() {
                                             minute: "2-digit",
                                         })}
                                     </span>
-                                    <button
-                                        className="st-history-delete"
-                                        onClick={() => handleDeleteHistory(item.id)}
-                                        title="Delete"
-                                    >
-                                        ✕
-                                    </button>
+                                    <div className="st-history-actions">
+                                        <button
+                                            className="st-history-action-btn"
+                                            onClick={() => handleDownloadHistory(item.result)}
+                                            title="Download"
+                                        >
+                                            ⬇️
+                                        </button>
+                                        <button
+                                            className="st-history-action-btn st-history-action-btn--delete"
+                                            onClick={() => handleDeleteHistory(item.id)}
+                                            title="Delete"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}

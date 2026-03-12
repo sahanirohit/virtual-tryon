@@ -9,6 +9,7 @@ const NAV_ITEMS = [
     { path: "/tryon", label: "Try-On Studio", icon: "👗" },
     { path: "/style-transfer", label: "Style Transfer", icon: "🎨" },
     { path: "/influencer", label: "Influencer Gen", icon: "✨" },
+    { path: "/content-creator", label: "Content Creator", icon: "🔥" },
 ];
 
 export default function Sidebar() {
