@@ -1074,7 +1074,8 @@ body {
 }
 
 .result-image-wrapper {
-  aspect-ratio: 9/16;
+  width: 350px;
+  max-width: 100%;
   position: relative;
   overflow: hidden;
   background: var(--bg-tertiary);
@@ -1082,7 +1083,7 @@ body {
 
 .result-image-wrapper img {
   width: 100%;
-  height: 100%;
+  height: auto;
   object-fit: contain;
   display: block;
 }
@@ -1388,15 +1389,16 @@ body {
 
 /* Model Image */
 .tryon-model-image-wrapper {
-  aspect-ratio: 9/16;
+  width: 350px;
+  max-width: 100%;
   overflow: hidden;
   background: var(--bg-tertiary);
 }
 
 .tryon-model-image-wrapper img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
   display: block;
 }
 
@@ -1934,7 +1936,8 @@ body {
 
 /* Model Image */
 .tryon-model-image-wrapper {
-  aspect-ratio: 9/16;
+  width: 350px;
+  max-width: 100%;
   overflow: hidden;
   background: var(--bg-tertiary);
   position: relative;
@@ -1942,8 +1945,8 @@ body {
 
 .tryon-model-image-wrapper img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
   display: block;
 }
 
@@ -2501,16 +2504,16 @@ body {
 /* Preview inside upload card */
 .st-preview-wrapper {
   position: relative;
-  aspect-ratio: 9/16;
-  max-height: 420px;
+  width: 350px;
+  max-width: 100%;
   overflow: hidden;
   background: var(--bg-tertiary);
 }
 
 .st-preview-wrapper img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
   display: block;
 }
 
@@ -2650,16 +2653,16 @@ body {
 }
 
 .st-result-image-wrapper {
-  aspect-ratio: 9/16;
-  max-height: 480px;
+  width: 350px;
+  max-width: 100%;
   overflow: hidden;
   background: var(--bg-tertiary);
 }
 
 .st-result-image-wrapper img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
   display: block;
 }
 
@@ -2715,8 +2718,6 @@ body {
 .st-history-ref,
 .st-history-result {
   position: relative;
-  aspect-ratio: 9/16;
-  max-height: 200px;
   overflow: hidden;
   background: var(--bg-tertiary);
 }
@@ -2724,8 +2725,8 @@ body {
 .st-history-ref img,
 .st-history-result img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
   display: block;
 }
 
@@ -2829,7 +2830,7 @@ body {
   }
 
   .st-result-image-wrapper {
-    max-height: 380px;
+    width: 300px;
   }
 
   .st-result-section {
@@ -2850,7 +2851,7 @@ body {
   }
 
   .st-preview-wrapper {
-    max-height: 350px;
+    width: 300px;
   }
 
   .st-loading-section {
@@ -2874,7 +2875,7 @@ body {
   }
 
   .st-result-image-wrapper {
-    max-height: 300px;
+    width: 280px;
   }
 
   .st-history-grid {
@@ -2895,7 +2896,7 @@ body {
   }
 
   .st-preview-wrapper {
-    max-height: 320px;
+    width: 280px;
   }
 
   .st-history-item {
@@ -2910,7 +2911,7 @@ body {
   }
 
   .st-preview-wrapper {
-    max-height: 280px;
+    width: 260px;
   }
 
   .st-generate-btn {
