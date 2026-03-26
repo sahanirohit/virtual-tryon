@@ -6,7 +6,6 @@ const PAGE_TITLES = {
     "/": "Dashboard",
     "/tryon": "Try-On Studio",
     "/style-transfer": "Style Transfer",
-    "/influencer": "Influencer Studio",
 };
 
 export default function Header() {

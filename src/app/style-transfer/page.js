@@ -6,9 +6,14 @@ import StyleTransferUploader from "@/components/StyleTransferUploader";
 import AspectRatioSelector from "@/components/AspectRatioSelector";
 import ImageQualitySelector from "@/components/ImageQualitySelector";
 
+const AI_MODELS = [
+    { id: "pro", label: "🍌 Nano Banana Pro", desc: "Best quality" },
+    { id: "flash", label: "⚡ Nano Banana 2", desc: "Faster" },
+];
+
 export default function StyleTransferPage() {
     const { apiKey } = useApiKey();
-    const [modelImage, setModelImage] = useState(null);
+    const [faceImages, setFaceImages] = useState({});
     const [referenceImage, setReferenceImage] = useState(null);
     const [resultImage, setResultImage] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -16,6 +21,7 @@ export default function StyleTransferPage() {
     const [history, setHistory] = useState([]);
     const [aspectRatio, setAspectRatio] = useState("9:16");
     const [imageQuality, setImageQuality] = useState("1K");
+    const [aiModel, setAiModel] = useState("pro");
 
     // Load history from localStorage
     useEffect(() => {
@@ -36,8 +42,28 @@ export default function StyleTransferPage() {
         }
     };
 
-    const handleModelSelected = useCallback((data) => {
-        setModelImage(data);
+    const handleFaceAdd = useCallback((slotId, data) => {
+        setFaceImages((prev) => ({ ...prev, [slotId]: data }));
+        setError(null);
+        setResultImage(null);
+    }, []);
+
+    const handleFaceRemove = useCallback((slotId) => {
+        setFaceImages((prev) => {
+            const updated = { ...prev };
+            delete updated[slotId];
+            return updated;
+        });
+        setResultImage(null);
+    }, []);
+
+    const handleFaceClear = useCallback(() => {
+        setFaceImages({});
+        setResultImage(null);
+    }, []);
+
+    const handleFaceProfileLoad = useCallback((profile) => {
+        setFaceImages(profile);
         setError(null);
         setResultImage(null);
     }, []);
@@ -48,34 +74,39 @@ export default function StyleTransferPage() {
         setResultImage(null);
     }, []);
 
-    const handleRemoveModel = () => {
-        setModelImage(null);
-        setResultImage(null);
-    };
-
     const handleRemoveReference = () => {
         setReferenceImage(null);
         setResultImage(null);
     };
 
+    const faceCount = Object.values(faceImages).filter(Boolean).length;
+
     const handleGenerate = async () => {
-        if (!modelImage || !referenceImage) return;
+        if (faceCount === 0 || !referenceImage) return;
 
         setIsProcessing(true);
         setError(null);
         setResultImage(null);
 
         try {
+            // Collect all face images as array
+            const faceImagesArray = Object.values(faceImages)
+                .filter(Boolean)
+                .map((img) => ({
+                    base64: img.base64,
+                    mimeType: img.mimeType,
+                }));
+
             const response = await fetch("/api/style-transfer", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    modelImageBase64: modelImage.base64,
-                    modelMimeType: modelImage.mimeType,
+                    faceImages: faceImagesArray,
                     referenceImageBase64: referenceImage.base64,
                     referenceMimeType: referenceImage.mimeType,
                     aspectRatio,
                     imageQuality,
+                    aiModel,
                     apiKey,
                 }),
             });
@@ -89,7 +120,7 @@ export default function StyleTransferPage() {
             const imageUrl = `data:${data.mimeType};base64,${data.image}`;
             setResultImage(imageUrl);
 
-            // Save to history using functional update to avoid stale closure
+            // Save to history
             const newItem = {
                 id: Date.now().toString(),
                 result: imageUrl,
@@ -138,7 +169,7 @@ export default function StyleTransferPage() {
         }
     };
 
-    const canGenerate = modelImage && referenceImage && !isProcessing;
+    const canGenerate = faceCount > 0 && referenceImage && !isProcessing;
 
     return (
         <div className="style-transfer-page">
@@ -147,39 +178,61 @@ export default function StyleTransferPage() {
                 <div className="workspace-card-header">
                     <h2 className="workspace-card-title">Style Transfer Studio</h2>
                     <p className="workspace-card-subtitle">
-                        Upload a model photo and a reference image — AI will recreate the reference with the model's face
+                        Build a face profile with 3-5 photos, then upload a style reference — AI will recreate the look with perfect face consistency
                     </p>
                 </div>
 
                 {error && <div className="error-message">⚠️ {error}</div>}
 
-                {/* Upload Grid */}
+                {/* Uploader */}
                 <StyleTransferUploader
-                    modelImage={modelImage}
+                    faceImages={faceImages}
                     referenceImage={referenceImage}
-                    onModelSelected={handleModelSelected}
+                    onFaceAdd={handleFaceAdd}
+                    onFaceRemove={handleFaceRemove}
+                    onFaceClear={handleFaceClear}
+                    onFaceProfileLoad={handleFaceProfileLoad}
                     onReferenceSelected={handleReferenceSelected}
-                    onRemoveModel={handleRemoveModel}
                     onRemoveReference={handleRemoveReference}
                     disabled={isProcessing}
                 />
 
-                {/* Generate Button */}
-                {modelImage && referenceImage && (
+                {/* Controls & Generate */}
+                {faceCount > 0 && referenceImage && (
                     <div className="st-generate-section">
+                        {/* Model Selector */}
+                        <div className="aspect-ratio-selector">
+                            <span className="aspect-ratio-label">AI Model</span>
+                            <div className="aspect-ratio-pills">
+                                {AI_MODELS.map((m) => (
+                                    <button
+                                        key={m.id}
+                                        className={`aspect-ratio-pill ${aiModel === m.id ? "active" : ""}`}
+                                        onClick={() => setAiModel(m.id)}
+                                        disabled={isProcessing}
+                                        type="button"
+                                        title={m.desc}
+                                    >
+                                        {m.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <AspectRatioSelector value={aspectRatio} onChange={setAspectRatio} disabled={isProcessing} />
                         <ImageQualitySelector value={imageQuality} onChange={setImageQuality} disabled={isProcessing} />
+
                         <button
                             className="btn btn-primary st-generate-btn"
                             onClick={handleGenerate}
                             disabled={!canGenerate}
                         >
-                            {isProcessing ? "⏳ Generating..." : "✨ Generate Style Transfer"}
+                            {isProcessing ? "⏳ Generating..." : `✨ Generate Style Transfer (${faceCount} face ref${faceCount > 1 ? "s" : ""})`}
                         </button>
                     </div>
                 )}
 
-                {/* Loading Overlay */}
+                {/* Loading */}
                 {isProcessing && (
                     <div className="st-loading-section">
                         <div className="spinner-wrapper">
@@ -188,12 +241,12 @@ export default function StyleTransferPage() {
                             <div className="spinner-ring"></div>
                             <div className="spinner-dot"></div>
                         </div>
-                        <p className="loading-text">Transferring style with AI magic...</p>
-                        <p className="loading-subtext">This may take a minute</p>
+                        <p className="loading-text">Running 3-step style transfer pipeline...</p>
+                        <p className="loading-subtext">Analyze scene → Remove face → Generate with {faceCount} face ref{faceCount > 1 ? "s" : ""}</p>
                     </div>
                 )}
 
-                {/* Result Section */}
+                {/* Result */}
                 {resultImage && (
                     <div className="st-result-section">
                         <div className="st-result-header">

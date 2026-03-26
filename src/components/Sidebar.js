@@ -8,8 +8,6 @@ const NAV_ITEMS = [
     { path: "/", label: "Dashboard", icon: "📊" },
     { path: "/tryon", label: "Try-On Studio", icon: "👗" },
     { path: "/style-transfer", label: "Style Transfer", icon: "🎨" },
-    { path: "/influencer", label: "Influencer Gen", icon: "✨" },
-    { path: "/content-creator", label: "Content Creator", icon: "🔥" },
 ];
 
 export default function Sidebar() {
@@ -59,7 +57,7 @@ export default function Sidebar() {
                     </div>
                     {!collapsed && (
                         <div className="sidebar-brand-text">
-                            <span className="sidebar-brand-name">RiyaStyles</span>
+                            <span className="sidebar-brand-name">PixelMuse</span>
                             <span className="sidebar-brand-tag">AI Fashion Studio</span>
                         </div>
                     )}

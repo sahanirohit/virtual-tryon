@@ -6,10 +6,10 @@ import Header from "@/components/Header";
 import ApiKeyModal from "@/components/ApiKeyModal";
 
 export const metadata = {
-  title: "RiyaStyles | AI Virtual Try-On Studio",
+  title: "PixelMuse | AI Fashion Studio",
   description:
-    "Upload your photo and generate a stunning full-body virtual model using AI. Try on outfits with your personal wardrobe. Powered by Google Gemini.",
-  keywords: ["virtual try-on", "AI fashion", "model generator", "Gemini AI", "wardrobe"],
+    "Upload your photo and generate a stunning full-body virtual model using AI. Try on outfits, transfer styles, and build your wardrobe. Powered by Google Gemini.",
+  keywords: ["virtual try-on", "AI fashion", "model generator", "style transfer", "Gemini AI", "PixelMuse"],
 };
 
 export default function RootLayout({ children }) {
