@@ -13,7 +13,7 @@ const AI_MODELS = [
 
 export default function StyleTransferPage() {
     const { apiKey } = useApiKey();
-    const [faceImages, setFaceImages] = useState({});
+    const [modelImage, setModelImage] = useState(null);
     const [referenceImage, setReferenceImage] = useState(null);
     const [resultImage, setResultImage] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -42,29 +42,14 @@ export default function StyleTransferPage() {
         }
     };
 
-    const handleFaceAdd = useCallback((slotId, data) => {
-        setFaceImages((prev) => ({ ...prev, [slotId]: data }));
+    const handleModelSelected = useCallback((data) => {
+        setModelImage(data);
         setError(null);
         setResultImage(null);
     }, []);
 
-    const handleFaceRemove = useCallback((slotId) => {
-        setFaceImages((prev) => {
-            const updated = { ...prev };
-            delete updated[slotId];
-            return updated;
-        });
-        setResultImage(null);
-    }, []);
-
-    const handleFaceClear = useCallback(() => {
-        setFaceImages({});
-        setResultImage(null);
-    }, []);
-
-    const handleFaceProfileLoad = useCallback((profile) => {
-        setFaceImages(profile);
-        setError(null);
+    const handleRemoveModel = useCallback(() => {
+        setModelImage(null);
         setResultImage(null);
     }, []);
 
@@ -74,34 +59,25 @@ export default function StyleTransferPage() {
         setResultImage(null);
     }, []);
 
-    const handleRemoveReference = () => {
+    const handleRemoveReference = useCallback(() => {
         setReferenceImage(null);
         setResultImage(null);
-    };
-
-    const faceCount = Object.values(faceImages).filter(Boolean).length;
+    }, []);
 
     const handleGenerate = async () => {
-        if (faceCount === 0 || !referenceImage) return;
+        if (!modelImage || !referenceImage) return;
 
         setIsProcessing(true);
         setError(null);
         setResultImage(null);
 
         try {
-            // Collect all face images as array
-            const faceImagesArray = Object.values(faceImages)
-                .filter(Boolean)
-                .map((img) => ({
-                    base64: img.base64,
-                    mimeType: img.mimeType,
-                }));
-
             const response = await fetch("/api/style-transfer", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    faceImages: faceImagesArray,
+                    modelImageBase64: modelImage.base64,
+                    modelMimeType: modelImage.mimeType,
                     referenceImageBase64: referenceImage.base64,
                     referenceMimeType: referenceImage.mimeType,
                     aspectRatio,
@@ -169,7 +145,7 @@ export default function StyleTransferPage() {
         }
     };
 
-    const canGenerate = faceCount > 0 && referenceImage && !isProcessing;
+    const canGenerate = modelImage && referenceImage && !isProcessing;
 
     return (
         <div className="style-transfer-page">
@@ -178,7 +154,7 @@ export default function StyleTransferPage() {
                 <div className="workspace-card-header">
                     <h2 className="workspace-card-title">Style Transfer Studio</h2>
                     <p className="workspace-card-subtitle">
-                        Build a face profile with 3-5 photos, then upload a style reference — AI will recreate the look with perfect face consistency
+                        Upload your photo and a style reference — AI will recreate the look with your face
                     </p>
                 </div>
 
@@ -186,19 +162,17 @@ export default function StyleTransferPage() {
 
                 {/* Uploader */}
                 <StyleTransferUploader
-                    faceImages={faceImages}
+                    modelImage={modelImage}
                     referenceImage={referenceImage}
-                    onFaceAdd={handleFaceAdd}
-                    onFaceRemove={handleFaceRemove}
-                    onFaceClear={handleFaceClear}
-                    onFaceProfileLoad={handleFaceProfileLoad}
+                    onModelSelected={handleModelSelected}
+                    onRemoveModel={handleRemoveModel}
                     onReferenceSelected={handleReferenceSelected}
                     onRemoveReference={handleRemoveReference}
                     disabled={isProcessing}
                 />
 
                 {/* Controls & Generate */}
-                {faceCount > 0 && referenceImage && (
+                {modelImage && referenceImage && (
                     <div className="st-generate-section">
                         {/* Model Selector */}
                         <div className="aspect-ratio-selector">
@@ -227,7 +201,7 @@ export default function StyleTransferPage() {
                             onClick={handleGenerate}
                             disabled={!canGenerate}
                         >
-                            {isProcessing ? "⏳ Generating..." : `✨ Generate Style Transfer (${faceCount} face ref${faceCount > 1 ? "s" : ""})`}
+                            {isProcessing ? "⏳ Generating..." : "✨ Generate Style Transfer"}
                         </button>
                     </div>
                 )}
@@ -241,8 +215,8 @@ export default function StyleTransferPage() {
                             <div className="spinner-ring"></div>
                             <div className="spinner-dot"></div>
                         </div>
-                        <p className="loading-text">Running 3-step style transfer pipeline...</p>
-                        <p className="loading-subtext">Analyze scene → Remove face → Generate with {faceCount} face ref{faceCount > 1 ? "s" : ""}</p>
+                        <p className="loading-text">Analyzing reference & generating your image...</p>
+                        <p className="loading-subtext">Analyze scene → Generate with your face</p>
                     </div>
                 )}
 

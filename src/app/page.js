@@ -164,16 +164,29 @@ export default function Home() {
   const handleUseAsIs = () => {
     if (!uploadedImage) return;
 
-    // Save uploaded image directly as the confirmed model
-    const newItem = {
-      id: Date.now().toString(),
-      image: uploadedImage.preview,
-      timestamp: new Date().toISOString(),
-    };
-    const updatedGallery = [newItem, ...gallery];
-    saveGallery(updatedGallery);
+    // IMPORTANT: Set confirmed model FIRST — this is critical for tryon page navigation.
+    // If gallery save fails (e.g. localStorage quota), navigation should still work.
+    try {
+      localStorage.setItem("vto-confirmed-model", uploadedImage.preview);
+    } catch (e) {
+      console.error("Failed to save confirmed model:", e);
+      setError("Failed to save image. Please clear some history and try again.");
+      return;
+    }
 
-    localStorage.setItem("vto-confirmed-model", uploadedImage.preview);
+    // Save to gallery history (non-critical — OK if this fails)
+    try {
+      const newItem = {
+        id: Date.now().toString(),
+        image: uploadedImage.preview,
+        timestamp: new Date().toISOString(),
+      };
+      const updatedGallery = [newItem, ...gallery];
+      saveGallery(updatedGallery);
+    } catch (e) {
+      console.error("Failed to save to gallery:", e);
+    }
+
     router.push("/tryon");
   };
 

@@ -11,7 +11,6 @@ const ANALYSIS_MODEL = "gemini-2.5-flash";
 export async function POST(request) {
     try {
         const {
-            faceImages,
             modelImageBase64,
             modelMimeType,
             referenceImageBase64,
@@ -26,12 +25,8 @@ export async function POST(request) {
             return NextResponse.json({ error: "Reference image is required" }, { status: 400 });
         }
 
-        const faceImagesArray = faceImages || [];
-        if (faceImagesArray.length === 0 && modelImageBase64) {
-            faceImagesArray.push({ base64: modelImageBase64, mimeType: modelMimeType || "image/jpeg" });
-        }
-        if (faceImagesArray.length === 0) {
-            return NextResponse.json({ error: "At least one face reference image is required" }, { status: 400 });
+        if (!modelImageBase64) {
+            return NextResponse.json({ error: "Model image is required" }, { status: 400 });
         }
 
         const apiKey = clientApiKey || process.env.GEMINI_API_KEY;
@@ -42,9 +37,10 @@ export async function POST(request) {
         const ai = new GoogleGenAI({ apiKey });
         const IMAGE_MODEL = MODEL_MAP[aiModel] || MODEL_MAP.pro;
         const refMime = referenceMimeType || "image/jpeg";
+        const modelMime = modelMimeType || "image/jpeg";
 
         // ═══════════════════════════════════════════
-        // STEP 1: Analyze the style reference image
+        // STEP 1: Analyze the reference image
         // Extract detailed description of pose, outfit, scene
         // ═══════════════════════════════════════════
         console.log("\n🔍 STEP 1: Analyzing style reference...\n");
@@ -77,95 +73,46 @@ DO NOT describe facial features. Format as one flowing paragraph usable as an im
         console.log("📝 Scene:", sceneDescription.substring(0, 200), "...\n");
 
         // ═══════════════════════════════════════════
-        // STEP 2: Remove/blur the face from style reference
-        // Creates a faceless version of the reference image
+        // STEP 2: Generate final image
+        // Model image (identity) + Reference image (style) + Scene description
         // ═══════════════════════════════════════════
-        console.log("🎭 STEP 2: Removing face from style reference...\n");
+        console.log("✨ STEP 2: Generating style transfer with model identity...\n");
 
-        const editResponse = await ai.models.generateContent({
-            model: IMAGE_MODEL,
-            contents: [{
-                role: "user",
-                parts: [
-                    {
-                        text: `Edit this image: completely remove the person's face. Replace the face area with a smooth, blank, skin-toned oval — like a mannequin or faceless figure. Keep EVERYTHING else exactly the same — the body, pose, outfit, clothing details, background, lighting, colors, composition. Only erase the facial features (eyes, nose, mouth, eyebrows) and replace with smooth blank skin. The rest of the image must be pixel-perfect identical.`
-                    },
-                    { inlineData: { mimeType: refMime, data: referenceImageBase64 } },
-                ],
-            }],
-            config: {
-                responseModalities: ["image", "text"],
-                imageConfig: {
-                    aspectRatio: aspectRatio || "9:16",
-                    ...(imageQuality ? { imageSize: imageQuality } : {}),
-                },
-            },
-        });
+        const generationPrompt = `I am providing TWO images:
 
-        let facelessImageData = null;
-        let facelessMime = "image/png";
-        const editParts = editResponse.candidates?.[0]?.content?.parts;
-        if (editParts) {
-            const imgPart = editParts.find((p) => p.inlineData);
-            if (imgPart) {
-                facelessImageData = imgPart.inlineData.data;
-                facelessMime = imgPart.inlineData.mimeType || "image/png";
-            }
-        }
+1. **MODEL IMAGE** (first image): This is the IDENTITY SOURCE. Study every detail of this person's face: eye shape, nose, jawline, lips, skin tone, face shape, hair color and texture. This is the person who must appear in the final image.
 
-        if (!facelessImageData) {
-            console.log("⚠️ Face removal failed, falling back to text-only approach\n");
-        } else {
-            console.log("✅ Faceless reference created\n");
-        }
+2. **REFERENCE IMAGE** (second image): This is the STYLE SOURCE. It shows the exact pose, outfit, scene, and lighting I want to recreate. Use this as your visual guide for composition.
 
-        // ═══════════════════════════════════════════
-        // STEP 3: Generate final image
-        // Face reference photos + faceless style image + scene description
-        // ═══════════════════════════════════════════
-        const faceCount = faceImagesArray.length;
-        console.log(`✨ STEP 3: Generating with ${faceCount} face ref(s) + ${facelessImageData ? "faceless reference" : "text-only"}...\n`);
-
-        const generationPrompt = `I am providing ${faceCount} photo${faceCount > 1 ? "s" : ""} of the SAME person from different angles. These are the IDENTITY SOURCE — study every detail of this person's face: eye shape, nose, jawline, lips, skin tone, face shape, hair color and texture.
-
-${facelessImageData
-    ? `I am also providing a FACELESS reference image — it shows the exact pose, outfit, scene, and lighting I want, but with the face removed. Use this image as your composition guide.`
-    : ``
-}
-
-Here is a detailed description of the target scene:
+Here is a detailed description of the target scene extracted from the reference:
 ${sceneDescription}
 
-YOUR TASK: Generate a photorealistic image of the person from the identity photos, placed into the scene described above.
+YOUR TASK: Generate a photorealistic image that recreates the reference image's pose, outfit, scene, and lighting — but with the person from the model image.
 
 CRITICAL RULES:
-- The FACE must be 100% from the identity reference photos — exact same eyes, nose, lips, jawline, skin tone, face shape
-- The POSE, OUTFIT, SCENE, and LIGHTING must match the description${facelessImageData ? " and faceless reference image" : ""}
-- Do NOT use any other face — ONLY the identity from the provided face reference photos
+- The FACE must be 100% from the model image — exact same eyes, nose, lips, jawline, skin tone, face shape
+- The POSE, OUTFIT, SCENE, and LIGHTING must match the reference image and description
+- Do NOT use the reference image's face — ONLY the model image's face/identity
 - Photorealistic quality, professional camera, natural skin with visible pores and texture
-- The result must look like a real photograph`;
+- The result must look like a real photograph of the model person in the reference scene`;
 
-        const parts = [{ text: generationPrompt }];
-
-        // Add face reference images first
-        for (const faceImg of faceImagesArray) {
-            parts.push({
+        const parts = [
+            { text: generationPrompt },
+            // Model image first (identity source)
+            {
                 inlineData: {
-                    mimeType: faceImg.mimeType || "image/jpeg",
-                    data: faceImg.base64,
+                    mimeType: modelMime,
+                    data: modelImageBase64,
                 },
-            });
-        }
-
-        // Add faceless reference image last (if available)
-        if (facelessImageData) {
-            parts.push({
+            },
+            // Reference image second (style source)
+            {
                 inlineData: {
-                    mimeType: facelessMime,
-                    data: facelessImageData,
+                    mimeType: refMime,
+                    data: referenceImageBase64,
                 },
-            });
-        }
+            },
+        ];
 
         const response = await ai.models.generateContent({
             model: IMAGE_MODEL,
